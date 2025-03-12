@@ -1,0 +1,50 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "test-teams-members-client-side-solution",
+    "id": "182c9cfe-e5c0-48a5-961f-db650e27f9dc",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.20.0"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "Test_TeamsMembers description"
+      },
+      "longDescription": {
+        "default": "Test_TeamsMembers description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "webApiPermissionRequests": [
+      {
+        "resource": "Microsoft Graph",
+        "scope": "ChannelMember.Read.All"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "Channel.ReadBasic.All"
+      }
+    ],    
+    "features": [
+      {
+        "title": "test-teams-members Feature",
+        "description": "The feature that activates elements of the test-teams-members solution.",
+        "id": "e06e229e-1d3a-4893-82f5-7c2d4b690574",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/test-teams-members.sppkg"
+  }
+}
