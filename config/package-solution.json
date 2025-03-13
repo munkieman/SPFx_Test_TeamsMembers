@@ -33,7 +33,19 @@
       {
         "resource": "Microsoft Graph",
         "scope": "Channel.ReadBasic.All"
-      }
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "TeamMember.Read.All"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "Presence.Read.All"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "User.Read.All"
+      }      
     ],    
     "features": [
       {

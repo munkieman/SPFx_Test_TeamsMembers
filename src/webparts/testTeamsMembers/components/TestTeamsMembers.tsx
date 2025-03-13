@@ -9,6 +9,7 @@ interface IChannelMember {
   id: string;
   displayName: string;
   roles: string[];
+  presence?: string; // Online, Busy, etc.
 }
 
 const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props:ITestTeamsMembersProps) => {
@@ -22,19 +23,11 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
     context 
   } = props;
 
-  //const [count, setCount] = useState(0);
   const [members, setMembers] = useState<IChannelMember[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-
   const teamName = "Travel and Expenses";
   const channelName = "ExpensesChat";
-
-  //const incrementCount = () => {
-  //  console.log("Increment button clicked");
-  //  setCount(count + 1);
-  //  return;
-  //};
 
   //componentDidMount
   useEffect(() => {
@@ -80,7 +73,35 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
         if (!membersResponse.ok) throw new Error("Failed to fetch channel members");
 
         const membersData = await membersResponse.json();
-        setMembers(membersData.value);
+        let membersList: IChannelMember[] = membersData.value.map((m: any) => ({
+          id: m.userId,
+          displayName: m.displayName,
+          roles: m.roles.map((r: string) => r.toLowerCase()), // Normalize roles
+        }));
+        // 🔥 Remove Owners from the list
+        membersList = membersList.filter((member) => !member.roles.includes("owner"));
+
+
+        // Fetch presence for each remaining member
+        const membersWithPresence = await Promise.all(
+          membersList.map(async (member) => {
+            try {
+              const presenceResponse: HttpClientResponse = await client.get(
+                `https://graph.microsoft.com/v1.0/users/${member.id}/presence`,
+                AadHttpClient.configurations.v1
+              );
+              if (!presenceResponse.ok) throw new Error("Failed to fetch presence");
+              
+              const presenceData = await presenceResponse.json();
+              return { ...member, presence: presenceData.availability };
+            } catch {
+              return { ...member, presence: "Unknown" };
+            }
+          })
+        );
+
+        setMembers(membersWithPresence);
+        //setMembers(membersData.value);
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -113,13 +134,14 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
         <div>Web part property value: <strong>{escape(description)}</strong></div>
       </div>
       <div>
-        <h3>Members of {channelName} in {teamName}</h3>
+        <h3>Team Members & Status (Excluding Owners)</h3>
         {loading && <p>Loading members...</p>}
         {error && <p style={{ color: "red" }}>{error}</p>}
         <ul>
           {members.map((member) => (
             <li key={member.id}>
-              {member.displayName} {member.roles.length > 0 && `(${member.roles.join(", ")})`}
+            {member.displayName} ({member.roles.length > 0 ? member.roles.join(", ") : "Member"}) - 
+            <strong> {member.presence} </strong>
             </li>
           ))}
         </ul>
@@ -127,5 +149,4 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
     </section>
   );
 }
-
 export default TestTeamsMembers;
