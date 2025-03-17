@@ -325,7 +325,7 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
           {members.map((member) => (
             <li key={member.id}>
             {member.displayName} ({member.roles.length > 0 ? member.roles.join(", ") : "Member"}) - 
-            <strong> {member.presence} </strong>
+            <strong style={{ color: member.presence === "Available" ? "green" : "black" }}> {member.presence} </strong>
             </li>
           ))}
         </ul>
