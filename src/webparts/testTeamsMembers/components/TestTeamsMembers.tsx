@@ -63,108 +63,6 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
   useEffect(() => {
     console.log("componentDidMount called.");
 
-    const checkMember = async () => { 
-      try {
-        //const accessToken = await getAccessToken();
-        const client = await context.aadHttpClientFactory.getClient("https://graph.microsoft.com");
-        const userResponse = await client.get(
-          `https://graph.microsoft.com/v1.0/users/${props.context.pageContext.user.email}`,
-          AadHttpClient.configurations.v1
-        );
-        const userData = await userResponse.json();
-        const userId = userData.id;      
-        console.log("userID",userId,userData);
-
-        // Fetch Team ID
-        const teamsResponse: HttpClientResponse = await client.get(
-          `https://graph.microsoft.com/v1.0/me/joinedTeams`,
-          AadHttpClient.configurations.v1
-        );
-        if (!teamsResponse.ok) throw new Error("Failed to fetch teams");
-    
-        const teamsData = await teamsResponse.json();
-        let team = teamsData.value.find((t: any) => t.displayName === teamName);
-        //if (!team) throw new Error(`Team "${teamName}" not found`);
-        
-        if (!team) {
-          console.log(`User is not in the team "${teamName}". Fetching team ID manually...`);
-    
-          // Get all teams the user has access to
-          const allTeamsResponse = await client.get(
-            `https://graph.microsoft.com/v1.0/groups?$filter=resourceProvisioningOptions/Any(x:x eq 'Team')`,
-            AadHttpClient.configurations.v1
-          );
-          if (!allTeamsResponse.ok) throw new Error("Failed to fetch available teams");
-    
-          const allTeamsData = await allTeamsResponse.json();
-          team = allTeamsData.value.find((t: any) => t.displayName === teamName);
-    
-          if (!team) throw new Error(`Team "${teamName}" not found.`);
-        }
-    
-        console.log("Found Team:", team);
-        console.log("checkmember Team:", team);        
-
-        // Check if user is already a member of the team
-        const membersResponse = await client.get(
-          `https://graph.microsoft.com/v1.0/teams/${team.id}/members`,
-          AadHttpClient.configurations.v1
-        );
-        const membersData = await membersResponse.json();
-        const userIsMember = membersData.value.some((m: any) => m.id === userId)
-        //const userIsMember = members.some(member => member.id === userId);    
-        
-        if (!userIsMember) {
-          showDialog("info","Adding you to the chat channel. Please wait...");    
-          console.log("User is not a member, adding to the chat channel...");
-    
-    
-          // Add user to the team
-          const addUserResponse: HttpClientResponse = await client.post(
-            `https://graph.microsoft.com/v1.0/teams/${team.id}/members`, //channels/${channel.id}/members`,
-             AadHttpClient.configurations.v1,
-            {
-              headers: { 
-                "Content-Type": "application/json"
-                //Authorization : `Bearer ${accessToken}`,
-              },
-              body: JSON.stringify({
-                "@odata.type": "#microsoft.graph.aadUserConversationMember",
-                "roles": ["member"],
-                "user@odata.bind": `https://graph.microsoft.com/v1.0/users/${userId}`,
-                "isHistoryIncluded": false, 
-                "visibleHistoryStartDateTime": null
-              })
-            }
-          );
-    
-          if (!addUserResponse.ok) {
-            const errorText = await addUserResponse.text();
-            showDialog("error","Failed to add user to the chat: " + errorText);
-            throw new Error(`Failed to add user to the chat: ${errorText}`);
-          }
-
-          fetchTeamMembers();       
-          showDialog("success","You have successfully joined the chat!");
-
-          //setIsChatDisabled(true);
-          console.log("User successfully added to the chat");
-        }else{
-          showDialog("success","You are already a member of this chat channel.");        
-          console.log("User is already a member of the chat channel");          
-        }
-        
-        //setChatContent(
-        //  `<iframe class="${styles.chatFrame}" src=""https://teams.microsoft.com/embed-client/chats/list?layout=singlePane"`
-           //https://teams.microsoft.com/l/channel/19%3AhC7tyJQiEwWgSjdfY12Kog0xog_43X9rEKdeLxxPP681%40thread.tacv2/General?groupId=ce155c65-5e9b-43a3-87c1-dd5ccc2d2fd3&tenantId=60b37d9e-2c27-417c-8f55-d82b676764bf"></iframe>`
-        //);
-    
-      } catch (error: any) {
-        console.error("Error in checkMember:", error.message);
-        showDialog("error","Error in adding user - checkMember() : " + error.message + ".  Please report this issue to the Service Desk.");
-      }
-    };  
-
     const fetchTeamMembers = async () => {
       try {
         setLoading(true);
@@ -287,6 +185,108 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
         setLoading(false);
       }
     };
+
+    const checkMember = async () => { 
+      try {
+        //const accessToken = await getAccessToken();
+        const client = await context.aadHttpClientFactory.getClient("https://graph.microsoft.com");
+        const userResponse = await client.get(
+          `https://graph.microsoft.com/v1.0/users/${props.context.pageContext.user.email}`,
+          AadHttpClient.configurations.v1
+        );
+        const userData = await userResponse.json();
+        const userId = userData.id;      
+        console.log("userID",userId,userData);
+
+        // Fetch Team ID
+        const teamsResponse: HttpClientResponse = await client.get(
+          `https://graph.microsoft.com/v1.0/me/joinedTeams`,
+          AadHttpClient.configurations.v1
+        );
+        if (!teamsResponse.ok) throw new Error("Failed to fetch teams");
+    
+        const teamsData = await teamsResponse.json();
+        let team = teamsData.value.find((t: any) => t.displayName === teamName);
+        //if (!team) throw new Error(`Team "${teamName}" not found`);
+        
+        if (!team) {
+          console.log(`User is not in the team "${teamName}". Fetching team ID manually...`);
+    
+          // Get all teams the user has access to
+          const allTeamsResponse = await client.get(
+            `https://graph.microsoft.com/v1.0/groups?$filter=resourceProvisioningOptions/Any(x:x eq 'Team')`,
+            AadHttpClient.configurations.v1
+          );
+          if (!allTeamsResponse.ok) throw new Error("Failed to fetch available teams");
+    
+          const allTeamsData = await allTeamsResponse.json();
+          team = allTeamsData.value.find((t: any) => t.displayName === teamName);
+    
+          if (!team) throw new Error(`Team "${teamName}" not found.`);
+        }
+    
+        console.log("Found Team:", team);
+        console.log("checkmember Team:", team);        
+
+        // Check if user is already a member of the team
+        const membersResponse = await client.get(
+          `https://graph.microsoft.com/v1.0/teams/${team.id}/members`,
+          AadHttpClient.configurations.v1
+        );
+        const membersData = await membersResponse.json();
+        const userIsMember = membersData.value.some((m: any) => m.id === userId)
+        //const userIsMember = members.some(member => member.id === userId);    
+        
+        if (!userIsMember) {
+          showDialog("info","Adding you to the chat channel. Please wait...");    
+          console.log("User is not a member, adding to the chat channel...");
+    
+    
+          // Add user to the team
+          const addUserResponse: HttpClientResponse = await client.post(
+            `https://graph.microsoft.com/v1.0/teams/${team.id}/members`, //channels/${channel.id}/members`,
+             AadHttpClient.configurations.v1,
+            {
+              headers: { 
+                "Content-Type": "application/json"
+                //Authorization : `Bearer ${accessToken}`,
+              },
+              body: JSON.stringify({
+                "@odata.type": "#microsoft.graph.aadUserConversationMember",
+                "roles": ["member"],
+                "user@odata.bind": `https://graph.microsoft.com/v1.0/users/${userId}`,
+                "isHistoryIncluded": false, 
+                "visibleHistoryStartDateTime": null
+              })
+            }
+          );
+    
+          if (!addUserResponse.ok) {
+            const errorText = await addUserResponse.text();
+            showDialog("error","Failed to add user to the chat: " + errorText);
+            throw new Error(`Failed to add user to the chat: ${errorText}`);
+          }
+
+          fetchTeamMembers();       
+          showDialog("success","You have successfully joined the chat!");
+
+          //setIsChatDisabled(true);
+          console.log("User successfully added to the chat");
+        }else{
+          showDialog("success","You are already a member of this chat channel.");        
+          console.log("User is already a member of the chat channel");          
+        }
+        
+        //setChatContent(
+        //  `<iframe class="${styles.chatFrame}" src=""https://teams.microsoft.com/embed-client/chats/list?layout=singlePane"`
+           //https://teams.microsoft.com/l/channel/19%3AhC7tyJQiEwWgSjdfY12Kog0xog_43X9rEKdeLxxPP681%40thread.tacv2/General?groupId=ce155c65-5e9b-43a3-87c1-dd5ccc2d2fd3&tenantId=60b37d9e-2c27-417c-8f55-d82b676764bf"></iframe>`
+        //);
+    
+      } catch (error: any) {
+        console.error("Error in checkMember:", error.message);
+        showDialog("error","Error in adding user - checkMember() : " + error.message + ".  Please report this issue to the Service Desk.");
+      }
+    };  
     
     checkMember();
 
