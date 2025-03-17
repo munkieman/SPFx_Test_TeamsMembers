@@ -33,6 +33,7 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
 
   const [members, setMembers] = useState<IChannelMember[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [dialogMessage, setDialogMessage] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -287,6 +288,71 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
         showDialog("error","Error in adding user - checkMember() : " + error.message + ".  Please report this issue to the Service Desk.");
       }
     };  
+
+    const removeMember = async () => {
+      alert('Removing member from chat');
+      /*
+      try {
+        const client = await context.aadHttpClientFactory.getClient("https://graph.microsoft.com");
+        const userEmail = props.context.pageContext.user.email;
+        
+        // Fetch Team ID
+        const teamsResponse: HttpClientResponse = await client.get(
+          `https://graph.microsoft.com/v1.0/me/joinedTeams`,
+          AadHttpClient.configurations.v1
+        );
+    
+        if (!teamsResponse.ok) throw new Error("Failed to fetch teams");
+    
+        const teamsData = await teamsResponse.json();
+        const team = teamsData.value.find((t: any) => t.displayName === teamName);
+        if (!team) throw new Error(`Team "${teamName}" not found`);
+    
+        // Fetch Standard Channel ID (not shared channel)
+        const channelsResponse: HttpClientResponse = await client.get(
+          `https://graph.microsoft.com/v1.0/teams/${team.id}/channels`,
+          AadHttpClient.configurations.v1
+        );
+        if (!channelsResponse.ok) throw new Error("Failed to fetch channels");
+    
+        const channelsData = await channelsResponse.json();
+        const channel = channelsData.value.find((c: any) => c.displayName === channelName);
+        if (!channel) throw new Error(`Channel "${channelName}" not found`);
+    
+        // 🔥 Fetch members from the standard channel
+        const membersResponse: HttpClientResponse = await client.get(
+          `https://graph.microsoft.com/v1.0/teams/${team.id}/channels/${channel.id}/members`,
+          AadHttpClient.configurations.v1
+        );
+    
+        if (!membersResponse.ok) throw new Error("Failed to fetch channel members");
+    
+        const membersData = await membersResponse.json();
+        const userMember = membersData.value.find((m: any) => m.email === userEmail);
+    
+        if (!userMember) {
+          showDialog("warning", "You are not a member of this channel.");
+          return;
+        }
+    
+        // 🔥 Remove the user from the standard channel
+        const removeResponse: HttpClientResponse = await client.delete(
+          `https://graph.microsoft.com/v1.0/teams/${team.id}/channels/${channel.id}/members/${userMember.id}`,
+          AadHttpClient.configurations.v1
+        );
+    
+        if (!removeResponse.ok) {
+          throw new Error("Failed to remove user from the chat channel");
+        }
+    
+        showDialog("success", "You have successfully left the chat.");
+        console.log("User successfully removed from the standard channel");
+      } catch (error: any) {
+        console.error("Error removing user:", error.message);
+        showDialog("error", "Failed to leave chat. Please try again.");
+      }
+      */      
+    }
     
     checkMember();
 
@@ -329,6 +395,7 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
             </li>
           ))}
         </ul>
+        <button className={styles.chatButton} id="chatButton" disabled={!message.trim()}>Join Chat</button>
       </div>
     </section>
   );
