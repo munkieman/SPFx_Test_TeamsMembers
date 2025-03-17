@@ -28,15 +28,54 @@
     "webApiPermissionRequests": [
       {
         "resource": "Microsoft Graph",
-        "scope": "ChannelMember.Read.All"
-      },
+        "scope": "Application.ReadWrite.All"
+      }, 
       {
         "resource": "Microsoft Graph",
         "scope": "Channel.ReadBasic.All"
+      },       
+      {
+        "resource": "Microsoft Graph",
+        "scope": "ChannelMember.ReadWrite.All"
       },
       {
         "resource": "Microsoft Graph",
-        "scope": "TeamMember.Read.All"
+        "scope": "ChannelMember.Read.All"
+      },                   
+      {
+        "resource": "Microsoft Graph",
+        "scope": "ChannelMessage.Read.All"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "ChannelMessage.Send"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "Chat.ReadWrite"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "ChatMember.ReadWrite"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "ChatMessage.Send"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "Directory.Read.All"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "Directory.ReadWrite.All"
+      },                      
+      {
+        "resource": "Microsoft Graph",
+        "scope": "Group.Read.All"
+      },      {
+        "resource": "Microsoft Graph",
+        "scope": "Group.ReadWrite.All"
       },
       {
         "resource": "Microsoft Graph",
@@ -44,9 +83,37 @@
       },
       {
         "resource": "Microsoft Graph",
+        "scope": "TeamMember.Read.All"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "TeamMember.ReadWrite.All"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "TeamMember.ReadWriteNonOwnerRole.All"
+      },      
+      {
+        "resource": "Microsoft Graph",
+        "scope": "TeamsAppInstallation.ReadForUser"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "TeamworkTag.Read.All"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "TeamworkTag.ReadWrite"
+      },
+      {
+        "resource": "Microsoft Graph",
         "scope": "User.Read.All"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "User.Read"
       }      
-    ],    
+    ],      
     "features": [
       {
         "title": "test-teams-members Feature",

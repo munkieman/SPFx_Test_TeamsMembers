@@ -32,3 +32,63 @@
     }
   }
 }
+
+.dialogOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialogBox {
+  padding: 20px;
+  width: fit-content;
+  height: fit-content;  
+  max-width:40vw;
+  max-height: 200px;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: bold;
+  text-wrap: balance;
+  overflow: ellipsis;
+}
+
+.dialog {
+  background-color:"[theme: themeLight, default: #9f7fc9]";
+  padding: 1rem;
+  border-radius: 4px;
+  border: 1px solid;
+  font-size: 1rem;
+  margin: 10px 0;
+}
+
+/* Message Type Styles */
+.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.warning {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
+.info {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
