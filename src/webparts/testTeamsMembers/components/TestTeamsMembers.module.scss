@@ -33,6 +33,27 @@
   }
 }
 
+.chatButton {
+  background-color: "[theme: themeDark, default: #200649]";
+  color: white;
+  font-weight: bold;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.chatButton:hover {
+  background-color: "[theme: themePrimary, default: #502e91]";
+  color:white;
+}
+
+.chatButton:disabled {
+  background-color: #424242;
+  color: "[theme: themeLight, default: #9f7fc9]";
+  cursor: not-allowed;
+}
+
 .dialogOverlay {
   position: fixed;
   top: 0;

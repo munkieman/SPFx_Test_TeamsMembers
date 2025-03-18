@@ -4,6 +4,7 @@ import styles from './TestTeamsMembers.module.scss';
 import type { ITestTeamsMembersProps } from './ITestTeamsMembersProps';
 import { escape } from '@microsoft/sp-lodash-subset';
 import { AadHttpClient, HttpClientResponse } from "@microsoft/sp-http";
+import { MSGraphClientV3 } from '@microsoft/sp-http';
 
 interface IChannelMember {
   id: string;
@@ -33,13 +34,15 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
 
   const [members, setMembers] = useState<IChannelMember[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [message, setMessage] = useState("");
+  //const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [dialogMessage, setDialogMessage] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [dialogType, setDialogType] = useState<"error" | "success" | "warning" | "info">("info"); // Default type
   const teamName = "TestChat";
   const channelName = "General";
+
+  let chatVisible: boolean = true;
 
   const Dialog: React.FC<DialogProps> = ({ type, message, onClose }) => {
     if (!message) return null;
@@ -63,6 +66,8 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
   //componentDidMount
   useEffect(() => {
     console.log("componentDidMount called.");
+
+    const button = document.getElementById('chatButton');
 
     const fetchTeamMembers = async () => {
       try {
@@ -187,12 +192,236 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
       }
     };
 
+    const getPermissions = async () : Promise<boolean> => {
+      alert('checking group permissions');
+
+      let isMember = false;
+      let graphClient: MSGraphClientV3 = (await props.context.msGraphClientFactory.getClient("3"));
+  
+      try {
+  
+        graphClient = await props.context.msGraphClientFactory.getClient("3");
+        const members : any = await graphClient.api("/groups/696dfe67-e76f-4bf8-8ab6-8abfcb16552e/members").get();
+        const myDetails = await graphClient.api("/me").get();
+        
+        console.log("group members",members);
+        console.log((await myDetails).id);
+        console.log("total members",members.value.length);
+  
+        for (let x = 0; x < members.value.length; x++) {
+          console.log("member id",members.value[x].id);
+          const groupMemberID = members.value[x].id;
+          if (groupMemberID === (await myDetails).id) {
+            console.log("is a group member");
+            isMember = true;
+            break;
+          }
+        }        
+      } catch (err) {
+        console.log("error",err);
+        // add error message code
+      }
+      return isMember;
+    } 
+
+    const removeMember = async () => {
+      alert('Removing member from chat');
+      
+      try {
+        const client = await context.aadHttpClientFactory.getClient("https://graph.microsoft.com");
+        const userEmail = props.context.pageContext.user.email;
+        
+        //Fetch User ID
+        
+        const userResponse = await client.get(
+          `https://graph.microsoft.com/v1.0/users/${userEmail}`,
+          AadHttpClient.configurations.v1
+        );
+        const userData = await userResponse.json();
+        const userId = userData.id;      
+        console.log("userID",userId,"userData",userData);
+        
+        // Fetch Team ID
+        const teamsResponse: HttpClientResponse = await client.get(
+          `https://graph.microsoft.com/v1.0/me/joinedTeams`,
+          AadHttpClient.configurations.v1
+        );
+    
+        if (!teamsResponse.ok) throw new Error("Failed to fetch teams");
+    
+        const teamsData = await teamsResponse.json();
+        console.log("teamsData",teamsData);
+
+        const team = teamsData.value.find((t: any) => t.displayName === teamName);
+        
+        /*
+        if (!team) {
+          console.log(`User is not in the team "${teamName}". Fetching team ID manually...`);
+    
+          // Get all teams the user has access to
+          const allTeamsResponse = await client.get(
+            `https://graph.microsoft.com/v1.0/groups?$filter=resourceProvisioningOptions/Any(x:x eq 'Team')`,
+            AadHttpClient.configurations.v1
+          );
+          if (!allTeamsResponse.ok) throw new Error("Failed to fetch available teams");
+    
+          const allTeamsData = await allTeamsResponse.json();
+          team = allTeamsData.value.find((t: any) => t.displayName === teamName);
+    
+          if (!team) throw new Error(`Team "${teamName}" not found.`);
+        }
+        */
+
+        console.log("Found Team:", team);
+
+        // 🔥 Fetch members from the Team
+        const membersResponse: HttpClientResponse = await client.get(
+          `https://graph.microsoft.com/v1.0/teams/${team.id}/members`,
+          AadHttpClient.configurations.v1
+        );
+    
+        //if (!membersResponse.ok) throw new Error("Failed to fetch Team members");
+    
+        const membersData = await membersResponse.json();
+        const userMember = membersData.value.find((m: any) => m.id === userId);
+        //const userIsMember = membersData.value.some((m: any) => m.id === userId)
+        console.log("Members Data:", membersData);
+        console.log("userMember",userMember);
+
+        //if (!userMember) {  
+        //  showDialog("warning", "You are not a member of this channel.");
+        //  return;
+        //}
+    
+        //console.log("User Member ID:", userMember.id,userId);
+
+        // 🔥 Remove the user from the Team
+        //const removeResponse: HttpClientResponse = await client.fetch(
+          //`https://graph.microsoft.com/v1.0/teams/${team.id}/members/${userMember.id}`,
+        //  `https://graph.microsoft.com/v1.0/groups/${team.id}/members/${userId}/$ref`,
+        //  AadHttpClient.configurations.v1,
+        //  {
+        //    method: 'DELETE',
+        //    headers: {
+        //      "Content-Type": "application/json"
+        //    }
+        //  }        
+        //);
+    
+        //if (!removeResponse.ok) {
+        //  const errorText = await removeResponse.text();
+        //  throw new Error(`Failed to remove user from the chat channel: ${errorText}`);
+        //}
+    
+        showDialog("success", "Thank you for contacting us, you have now left the chat.");
+        console.log("User successfully removed from the standard channel");
+      } catch (error: any) {
+        console.error("Error removing user:", error.message);
+        //showDialog("error", "ERROR : There was an issue, you have not been removed.  Please ask the advisor to remove you.");
+      }     
+    }
+
+
+/*  last update from Github Copilot.
+
+const removeMember = async () => {
+  alert('Removing member from chat');
+  
+  try {
+    const client = await context.aadHttpClientFactory.getClient("https://graph.microsoft.com");
+    const userEmail = props.context.pageContext.user.email;
+    
+    // Fetch user ID
+    const userResponse = await client.get(
+      `https://graph.microsoft.com/v1.0/users/${userEmail}`,
+      AadHttpClient.configurations.v1
+    );
+    const userData = await userResponse.json();
+    const userId = userData.id;      
+    console.log("userID", userId, userData);
+    
+    // Fetch Team ID
+    const teamsResponse: HttpClientResponse = await client.get(
+      `https://graph.microsoft.com/v1.0/me/joinedTeams`,
+      AadHttpClient.configurations.v1
+    );
+
+    if (!teamsResponse.ok) throw new Error("Failed to fetch teams");
+
+    const teamsData = await teamsResponse.json();
+    let team = teamsData.value.find((t: any) => t.displayName === teamName);
+
+    if (!team) {
+      console.log(`User is not in the team "${teamName}". Fetching team ID manually...`);
+
+      // Get all teams the user has access to
+      const allTeamsResponse = await client.get(
+        `https://graph.microsoft.com/v1.0/groups?$filter=resourceProvisioningOptions/Any(x:x eq 'Team')`,
+        AadHttpClient.configurations.v1
+      );
+      if (!allTeamsResponse.ok) throw new Error("Failed to fetch available teams");
+
+      const allTeamsData = await allTeamsResponse.json();
+      team = allTeamsData.value.find((t: any) => t.displayName === teamName);
+
+      if (!team) throw new Error(`Team "${teamName}" not found.`);
+    }
+
+    console.log("Found Team:", team);
+
+    // Fetch members from the team
+    const membersResponse: HttpClientResponse = await client.get(
+      `https://graph.microsoft.com/v1.0/teams/${team.id}/members`,
+      AadHttpClient.configurations.v1
+    );
+
+    if (!membersResponse.ok) throw new Error("Failed to fetch team members");
+
+    const membersData = await membersResponse.json();
+    const userMember = membersData.value.find((m: any) => m.id === userId);
+
+    if (!userMember) {
+      console.log("Members Data:", membersData);
+      showDialog("warning", "You are not a member of this team.");
+      return;
+    }
+
+    console.log("User Member ID:", userMember.id);
+
+    // Remove the user from the team using the /groups/{group-id}/members/{directory-object-id}/$ref endpoint
+    const removeResponse: HttpClientResponse = await client.fetch(
+      `https://graph.microsoft.com/v1.0/groups/${team.id}/members/${userMember.id}/$ref`,
+      AadHttpClient.configurations.v1,
+      {
+        method: 'DELETE',
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    if (!removeResponse.ok) {
+      const errorText = await removeResponse.text();
+      throw new Error(`Failed to remove user from the team: ${errorText}`);
+    }
+
+    showDialog("success", "Thank you for contacting us, you have now left the chat.");
+    console.log("User successfully removed from the team");
+  } catch (error: any) {
+    console.error("Error removing user:", error.message);
+    showDialog("error", "ERROR : There was an issue, you have not been removed. Please ask the advisor to remove you.");
+  }     
+};
+*/
+
+
     const checkMember = async () => { 
       try {
         //const accessToken = await getAccessToken();
         const client = await context.aadHttpClientFactory.getClient("https://graph.microsoft.com");
+        const userEmail = props.context.pageContext.user.email;
         const userResponse = await client.get(
-          `https://graph.microsoft.com/v1.0/users/${props.context.pageContext.user.email}`,
+          `https://graph.microsoft.com/v1.0/users/${userEmail}`,
           AadHttpClient.configurations.v1
         );
         const userData = await userResponse.json();
@@ -268,7 +497,7 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
             throw new Error(`Failed to add user to the chat: ${errorText}`);
           }
 
-          fetchTeamMembers();       
+          fetchTeamMembers();
           showDialog("success","You have successfully joined the chat!");
 
           //setIsChatDisabled(true);
@@ -289,73 +518,21 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
       }
     };  
 
-    const removeMember = async () => {
-      alert('Removing member from chat');
-      /*
-      try {
-        const client = await context.aadHttpClientFactory.getClient("https://graph.microsoft.com");
-        const userEmail = props.context.pageContext.user.email;
-        
-        // Fetch Team ID
-        const teamsResponse: HttpClientResponse = await client.get(
-          `https://graph.microsoft.com/v1.0/me/joinedTeams`,
-          AadHttpClient.configurations.v1
-        );
-    
-        if (!teamsResponse.ok) throw new Error("Failed to fetch teams");
-    
-        const teamsData = await teamsResponse.json();
-        const team = teamsData.value.find((t: any) => t.displayName === teamName);
-        if (!team) throw new Error(`Team "${teamName}" not found`);
-    
-        // Fetch Standard Channel ID (not shared channel)
-        const channelsResponse: HttpClientResponse = await client.get(
-          `https://graph.microsoft.com/v1.0/teams/${team.id}/channels`,
-          AadHttpClient.configurations.v1
-        );
-        if (!channelsResponse.ok) throw new Error("Failed to fetch channels");
-    
-        const channelsData = await channelsResponse.json();
-        const channel = channelsData.value.find((c: any) => c.displayName === channelName);
-        if (!channel) throw new Error(`Channel "${channelName}" not found`);
-    
-        // 🔥 Fetch members from the standard channel
-        const membersResponse: HttpClientResponse = await client.get(
-          `https://graph.microsoft.com/v1.0/teams/${team.id}/channels/${channel.id}/members`,
-          AadHttpClient.configurations.v1
-        );
-    
-        if (!membersResponse.ok) throw new Error("Failed to fetch channel members");
-    
-        const membersData = await membersResponse.json();
-        const userMember = membersData.value.find((m: any) => m.email === userEmail);
-    
-        if (!userMember) {
-          showDialog("warning", "You are not a member of this channel.");
-          return;
-        }
-    
-        // 🔥 Remove the user from the standard channel
-        const removeResponse: HttpClientResponse = await client.delete(
-          `https://graph.microsoft.com/v1.0/teams/${team.id}/channels/${channel.id}/members/${userMember.id}`,
-          AadHttpClient.configurations.v1
-        );
-    
-        if (!removeResponse.ok) {
-          throw new Error("Failed to remove user from the chat channel");
-        }
-    
-        showDialog("success", "You have successfully left the chat.");
-        console.log("User successfully removed from the standard channel");
-      } catch (error: any) {
-        console.error("Error removing user:", error.message);
-        showDialog("error", "Failed to leave chat. Please try again.");
-      }
-      */      
-    }
-    
-    checkMember();
+    const toggleButton = async () => {
+      chatVisible = !chatVisible;
+      alert("button clicked");
+      getPermissions();       
+      removeMember();
 
+    }
+
+    if (button) {
+      button.addEventListener('click', () => {
+        toggleButton();
+      });
+    }
+
+    checkMember();
     return;   
   }, []);
 
@@ -390,12 +567,12 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
         <ul>
           {members.map((member) => (
             <li key={member.id}>
-            {member.displayName} ({member.roles.length > 0 ? member.roles.join(", ") : "Member"}) - 
-            <strong style={{ color: member.presence === "Available" ? "green" : "black" }}> {member.presence} </strong>
+              {member.displayName} ({member.roles.length > 0 ? member.roles.join(", ") : "Member"}) - 
+              <strong style={{ color: member.presence === "Available" ? "green" : "black" }}> {member.presence} </strong>
             </li>
           ))}
         </ul>
-        <button className={styles.chatButton} id="chatButton" disabled={!message.trim()}>Join Chat</button>
+        <button className={styles.chatButton} id="chatButton">Leave Chat</button>
       </div>
     </section>
   );

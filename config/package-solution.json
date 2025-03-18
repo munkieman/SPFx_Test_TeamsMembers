@@ -73,9 +73,14 @@
       {
         "resource": "Microsoft Graph",
         "scope": "Group.Read.All"
-      },      {
+      },
+      {
         "resource": "Microsoft Graph",
         "scope": "Group.ReadWrite.All"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "GroupMember.ReadWrite.All"
       },
       {
         "resource": "Microsoft Graph",
@@ -105,6 +110,10 @@
         "resource": "Microsoft Graph",
         "scope": "TeamworkTag.ReadWrite"
       },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "Team.ReadWrite"
+      },      
       {
         "resource": "Microsoft Graph",
         "scope": "User.Read.All"
