@@ -192,7 +192,7 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
       }
     };
 
-    const getPermissions = async () : Promise<boolean> => {
+    const getMembers = async () : Promise<boolean> => {
       alert('checking group permissions');
 
       let isMember = false;
@@ -201,7 +201,8 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
       try {
   
         graphClient = await props.context.msGraphClientFactory.getClient("3");
-        const members : any = await graphClient.api("/groups/696dfe67-e76f-4bf8-8ab6-8abfcb16552e/members").get();
+        const members : any = await graphClient.api("/groups/5d3e8ded-4c9f-4bdc-919f-a34ce322caeb/members").get();
+        //const members : any = await graphClient.api("/groups/696dfe67-e76f-4bf8-8ab6-8abfcb16552e/members").get();
         const myDetails = await graphClient.api("/me").get();
         
         console.log("group members",members);
@@ -455,22 +456,23 @@ const removeMember = async () => {
           if (!team) throw new Error(`Team "${teamName}" not found.`);
         }
     
+        // Check if user is already a member of the team
+        //const membersResponse = await client.get(
+        //  `https://graph.microsoft.com/v1.0/teams/${team.id}/members`,
+        //  AadHttpClient.configurations.v1
+        //);
+        //const membersData = await membersResponse.json();
+        //const userIsMember = membersData.value.some((m: any) => m.id === userId)
+        //const userIsMember = members.some(member => member.id === userId);    
+        const userIsMember = getMembers();
+
         console.log("Found Team:", team);
         console.log("checkmember Team:", team);        
+        console.log("useIsMember",userIsMember);
 
-        // Check if user is already a member of the team
-        const membersResponse = await client.get(
-          `https://graph.microsoft.com/v1.0/teams/${team.id}/members`,
-          AadHttpClient.configurations.v1
-        );
-        const membersData = await membersResponse.json();
-        const userIsMember = membersData.value.some((m: any) => m.id === userId)
-        //const userIsMember = members.some(member => member.id === userId);    
-        
         if (!userIsMember) {
           showDialog("info","Adding you to the chat channel. Please wait...");    
           console.log("User is not a member, adding to the chat channel...");
-    
     
           // Add user to the team
           const addUserResponse: HttpClientResponse = await client.post(
@@ -497,7 +499,6 @@ const removeMember = async () => {
             throw new Error(`Failed to add user to the chat: ${errorText}`);
           }
 
-          fetchTeamMembers();
           showDialog("success","You have successfully joined the chat!");
 
           //setIsChatDisabled(true);
@@ -506,7 +507,9 @@ const removeMember = async () => {
           showDialog("success","You are already a member of this chat channel.");        
           console.log("User is already a member of the chat channel");          
         }
-        
+
+        fetchTeamMembers();
+
         //setChatContent(
         //  `<iframe class="${styles.chatFrame}" src=""https://teams.microsoft.com/embed-client/chats/list?layout=singlePane"`
            //https://teams.microsoft.com/l/channel/19%3AhC7tyJQiEwWgSjdfY12Kog0xog_43X9rEKdeLxxPP681%40thread.tacv2/General?groupId=ce155c65-5e9b-43a3-87c1-dd5ccc2d2fd3&tenantId=60b37d9e-2c27-417c-8f55-d82b676764bf"></iframe>`
@@ -521,7 +524,6 @@ const removeMember = async () => {
     const toggleButton = async () => {
       chatVisible = !chatVisible;
       alert("button clicked");
-      getPermissions();       
       removeMember();
 
     }
