@@ -4,7 +4,7 @@ import styles from './TestTeamsMembers.module.scss';
 import type { ITestTeamsMembersProps } from './ITestTeamsMembersProps';
 import { escape } from '@microsoft/sp-lodash-subset';
 import { AadHttpClient, HttpClientResponse } from "@microsoft/sp-http";
-import { MSGraphClientV3 } from '@microsoft/sp-http';
+//import { MSGraphClientV3 } from '@microsoft/sp-http';
 
 interface IChannelMember {
   id: string;
@@ -67,7 +67,8 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
   useEffect(() => {
     console.log("componentDidMount called.");
 
-    const button = document.getElementById('chatButton');
+    const chatbtn = document.getElementById('chatButton');
+    const msgBtn = document.getElementById('msgButton');
 
     const fetchTeamMembers = async () => {
       try {
@@ -192,6 +193,7 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
       }
     };
 
+/*    
     const getMembers = async () : Promise<boolean> => {
       alert('checking group permissions');
 
@@ -201,30 +203,34 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
       try {
   
         graphClient = await props.context.msGraphClientFactory.getClient("3");
-        const members : any = await graphClient.api("/groups/5d3e8ded-4c9f-4bdc-919f-a34ce322caeb/members").get();
+        const membersResponse = await graphClient.api("/groups/5d3e8ded-4c9f-4bdc-919f-a34ce322caeb/members").get();
         //const members : any = await graphClient.api("/groups/696dfe67-e76f-4bf8-8ab6-8abfcb16552e/members").get();
         const myDetails = await graphClient.api("/me").get();
         
-        console.log("group members",members);
+    //https://teams.microsoft.com/l/channel/19%3A4MJijyhTk1dVGDiXO5LOCHxxMqv2Iz-wD6Wtco1W7j81%40thread.tacv2/General?groupId=696dfe67-e76f-4bf8-8ab6-8abfcb16552e&tenantId=1a25c064-c00a-402f-8f6c-ce0e12a6293d
+
+        console.log("group members",membersResponse);
         console.log((await myDetails).id);
-        console.log("total members",members.value.length);
+        console.log("total members",membersResponse.value.length);
   
-        for (let x = 0; x < members.value.length; x++) {
-          console.log("member id",members.value[x].id);
-          const groupMemberID = members.value[x].id;
-          if (groupMemberID === (await myDetails).id) {
+        for (let x = 0; x < membersResponse.value.length; x++) {
+          console.log("member id",membersResponse.value[x].id);
+          const groupMemberID = membersResponse.value[x].id;
+          
+          // Check if the current user is a member of the group
+          if (groupMemberID === myDetails.id) {
             console.log("is a group member");
             isMember = true;
             break;
           }
         }        
       } catch (err) {
-        console.log("error",err);
+        console.log("error :",err);
         // add error message code
       }
       return isMember;
     } 
-
+*/
     const removeMember = async () => {
       alert('Removing member from chat');
       
@@ -415,12 +421,13 @@ const removeMember = async () => {
 };
 */
 
-
     const checkMember = async () => { 
       try {
         //const accessToken = await getAccessToken();
         const client = await context.aadHttpClientFactory.getClient("https://graph.microsoft.com");
         const userEmail = props.context.pageContext.user.email;
+        
+        //Fetch the user ID
         const userResponse = await client.get(
           `https://graph.microsoft.com/v1.0/users/${userEmail}`,
           AadHttpClient.configurations.v1
@@ -438,7 +445,6 @@ const removeMember = async () => {
     
         const teamsData = await teamsResponse.json();
         let team = teamsData.value.find((t: any) => t.displayName === teamName);
-        //if (!team) throw new Error(`Team "${teamName}" not found`);
         
         if (!team) {
           console.log(`User is not in the team "${teamName}". Fetching team ID manually...`);
@@ -457,18 +463,48 @@ const removeMember = async () => {
         }
     
         // Check if user is already a member of the team
+        let userIsMember = false;
+        let membersUrl = `https://graph.microsoft.com/v1.0/teams/${team.id}/members`;
+
+        do {
+          // Fetch team members
+          const membersResponse = await client.get(membersUrl, AadHttpClient.configurations.v1);
+          if (!membersResponse.ok) {
+            throw new Error("Failed to fetch members");
+          }
+          const membersData = await membersResponse.json();
+          
+          console.log("Members Data:", membersData);  // Log member data for debugging
+          console.log("Comparing userId:", userId);  // Log userId for debugging
+
+          // Check if the user is a member in this page of members
+          userIsMember = membersData.value.some((m: any) => m.id === userId);
+      
+          // If the user is found, exit the loop
+          if (userIsMember) {
+            console.log("User is a member of the team!");
+            break;
+          }
+      
+          // If pagination exists, update the membersUrl to the next page
+          membersUrl = membersData["@odata.nextLink"];
+          
+        } while (membersUrl && !userIsMember);        
+        
+
         //const membersResponse = await client.get(
         //  `https://graph.microsoft.com/v1.0/teams/${team.id}/members`,
         //  AadHttpClient.configurations.v1
         //);
+
         //const membersData = await membersResponse.json();
         //const userIsMember = membersData.value.some((m: any) => m.id === userId)
         //const userIsMember = members.some(member => member.id === userId);    
-        const userIsMember = getMembers();
+        //const userIsMember = getMembers();
 
         console.log("Found Team:", team);
         console.log("checkmember Team:", team);        
-        console.log("useIsMember",userIsMember);
+        console.log("userIsMember",userIsMember);
 
         if (!userIsMember) {
           showDialog("info","Adding you to the chat channel. Please wait...");    
@@ -521,16 +557,136 @@ const removeMember = async () => {
       }
     };  
 
+    const sendMessageToTeams = async (message: string) => {
+      try {
+        const client = await context.aadHttpClientFactory.getClient("https://graph.microsoft.com");
+    
+        // Fetch Team ID
+        const teamsResponse: HttpClientResponse = await client.get(
+          `https://graph.microsoft.com/v1.0/me/joinedTeams`,
+          AadHttpClient.configurations.v1
+        );
+        if (!teamsResponse.ok) throw new Error("Failed to fetch teams");
+    
+        const teamsData = await teamsResponse.json();
+        const team = teamsData.value.find((t: any) => t.displayName === teamName);
+        if (!team) throw new Error(`Team "${teamName}" not found`);
+    
+        // Fetch Channel ID
+        const channelsResponse: HttpClientResponse = await client.get(
+          `https://graph.microsoft.com/v1.0/teams/${team.id}/channels`,
+          AadHttpClient.configurations.v1
+        );
+        if (!channelsResponse.ok) throw new Error("Failed to fetch channels");
+    
+        const channelsData = await channelsResponse.json();
+        const channel = channelsData.value.find((c: any) => c.displayName === channelName);
+        if (!channel) throw new Error(`Channel "${channelName}" not found`);
+
+        console.log("sendmsg Team:", team);
+        console.log("sendmsg Channel:", channel);
+
+        // Fetch Team Tags (To get @expenses Tag ID)
+        const tagsResponse: HttpClientResponse = await client.get(
+          `https://graph.microsoft.com/v1.0/teams/${team.id}/tags`,
+          AadHttpClient.configurations.v1
+        );
+        if (!tagsResponse.ok) throw new Error("Failed to fetch tags");
+
+        const tagsData = await tagsResponse.json();
+        const expensesTag = tagsData.value.find((tag: any) => tag.displayName === "expenses");
+    
+        if (!expensesTag) throw new Error(`Tag "@expenses" not found in team "${teamName}"`);
+    
+        // 🔥 POST request to send message with @expenses mention
+        const mentionId = 1; // You can keep this as 0 or another unique identifier, but it must match the ID in the <at> tag.
+        const tagHTML = "<at id='1'>expenses</at> ";
+
+        const response = await client.post(
+          `https://graph.microsoft.com/v1.0/teams/${team.id}/channels/${channel.id}/messages`,
+          AadHttpClient.configurations.v1,
+          {
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              body: {
+                contentType: "html",
+                content: tagHTML+message,
+              },
+              mentions: [
+                {
+                  id: mentionId, // Mention ID must match the id used in the HTML content
+                  mentionText: "expenses",
+                  mentioned: {
+                    tag: {
+                      id: expensesTag.id,
+                      displayName: "expenses",
+                    },
+                  },
+                },
+              ],
+            }),
+          }
+        );
+
+        console.log("Mention ID:", mentionId);
+        console.log("Expenses Tag ID:", expensesTag.id);
+
+    
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to send message: ${errorText}`);
+        }
+    
+        showDialog("success","Message sent successfully to Teams!");
+      } catch (error: any) {
+        console.error("Error sending message:", error.message);
+        showDialog("error","Failed to send message. Please add your message to the chat yourself.");
+      }
+    };
+
+
     const toggleButton = async () => {
       chatVisible = !chatVisible;
       alert("button clicked");
       removeMember();
 
+        // Open Teams channel link in a new tab
+        // Max Prod Team
+        //const teamsUrl = "https://teams.microsoft.com/l/channel/19%3AWELxtb3PBurFUqD2tVetv08tqw2FzQqvWFIqgi3XO5E1%40thread.tacv2/General?groupId=68d9eb2c-06f7-40ed-bd99-a5a35fab0275&tenantId=5074b8cc-1608-4b41-aafd-2662dd5f9bfb"
+
+        // Max Dev Team
+        //onst teamsUrl = "https://teams.microsoft.com/l/channel/19%3AZm1apJrPyGtKa-BkY_tukt58gCkO7UqNSvFn65k_qbY1%40thread.tacv2/test%202?groupId=8514ff80-d5e4-4a5b-8bed-271dc0f39396&tenantId=1a25c064-c00a-402f-8f6c-ce0e12a6293d&ngc=true&allowXTenantAccess=true";
+        
+        // Munkieman Team
+        //const teamsUrl = "https://teams.microsoft.com/l/team/19%3AhC7tyJQiEwWgSjdfY12Kog0xog_43X9rEKdeLxxPP681%40thread.tacv2/General?groupId=ce155c65-5e9b-43a3-87c1-dd5ccc2d2fd3&tenantId=60b37d9e-2c27-417c-8f55-d82b676764bf";
+
+        //chatWindow.innerHTML = '';
+        //chatWindow.innerHTML = '<iframe class="${styles.chatFrame}" src="https://teams.microsoft.com/l/team/19%3AhC7tyJQiEwWgSjdfY12Kog0xog_43X9rEKdeLxxPP681%40thread.tacv2/General?groupId=ce155c65-5e9b-43a3-87c1-dd5ccc2d2fd3&tenantId=60b37d9e-2c27-417c-8f55-d82b676764bf';
+
+        //`<iframe class="${styles.chatFrame}" src="https://teams.microsoft.com/l/channel/19%3Ak72S77MsNyph3uRovCIJUQuDxnGLN3Berc4yCc6QTdM1%40thread.tacv2/ExpensesChat?groupId=b23319b0-24bc-47e8-b415-f1c46c49830c&tenantId=5074b8cc-1608-4b41-aafd-2662dd5f9bfb&ngc=true&allowXTenantAccess=true"></iframe>`;
+
+        // 🔥 Open Teams channel link in a new tab
+        //teamsWindow = window.open(teamsUrl, "_blank", "noopener,noreferrer");
+
+        // Ensure teamsWindow is open before trying to close it
+        //setTimeout(() => {
+        //  if (teamsWindow && !teamsWindow.closed) {
+        //    teamsWindow.close();
+        //    teamsWindow = null; // Reset reference
+        //  }
+        //}, 1000); // 🔥 Adjust timing if necessary
+
     }
 
-    if (button) {
-      button.addEventListener('click', () => {
+    if (chatbtn) {
+      chatbtn.addEventListener('click', () => {
         toggleButton();
+      });
+    }
+
+    if (msgBtn) {
+      msgBtn.addEventListener('click', () => {
+        sendMessageToTeams("hello world");
       });
     }
 
@@ -574,6 +730,7 @@ const removeMember = async () => {
             </li>
           ))}
         </ul>
+        <button className={styles.chatButton} id="msgButton">Send Msg</button>
         <button className={styles.chatButton} id="chatButton">Leave Chat</button>
       </div>
     </section>
