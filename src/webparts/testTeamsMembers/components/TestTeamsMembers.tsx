@@ -328,7 +328,6 @@ const TestTeamsMembers: React.FunctionComponent<ITestTeamsMembersProps> = (props
       }     
     }
 
-
 /*  last update from Github Copilot.
 
 const removeMember = async () => {
